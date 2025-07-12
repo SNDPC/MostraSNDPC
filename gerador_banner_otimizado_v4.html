@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gerador de Banner - Mostra</title>
+  <style>
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: #f5f0e6;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    form {
+      width: 100%;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    canvas {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ccc;
+      background: url('https://www.transparenttextures.com/patterns/paper-fibers.png');
+    }
+    #preview {
+      width: 100%;
+      text-align: center;
+      overflow-x: auto;
+      max-width: 100%;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gerador de Banner - Mostra</h1>
+  <div class="container">
+    <form id="bannerForm">
+      <label for="titulo">Título do Estudo de Caso</label>
+      <input type="text" id="titulo" maxlength="100" />
+
+      <label for="autor">Autor(a)</label>
+      <input type="text" id="autor" maxlength="100" />
+
+      <label for="instituicao">Instituição / Município / Estado</label>
+      <input type="text" id="instituicao" maxlength="150" />
+
+      <label for="resumo">Resumo (até 500 caracteres)</label>
+      <textarea id="resumo" maxlength="500"></textarea>
+
+      <label>Imagens do Projeto (até 5)</label>
+      <input type="file" id="imagensProjeto" accept="image/*" multiple />
+
+      <label>Logotipo Institucional (1 imagem)</label>
+      <input type="file" id="logosInstituicao" accept="image/*" />
+
+      <button type="button" id="gerarBannerBtn">Gerar Banner</button>
+    </form>
+
+    <div id="preview">
+      <canvas id="bannerCanvas" width="1600" height="2400"></canvas>
+      <button onclick="baixarImagem()">Baixar Banner</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const canvas = document.getElementById("bannerCanvas");
+      const ctx = canvas.getContext("2d");
+
+      document.getElementById("gerarBannerBtn").addEventListener("click", gerarBanner);
+
+      function carregarMultiplasImagens(input, limite) {
+        return new Promise((resolve) => {
+          const files = Array.from(input.files).slice(0, limite);
+          let imagens = [];
+          let carregadas = 0;
+          if (files.length === 0) return resolve(imagens);
+
+          files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              const img = new Image();
+              img.onload = () => {
+                imagens.push(img);
+                carregadas++;
+                if (carregadas === files.length) resolve(imagens);
+              };
+              img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+      }
+
+      async function gerarBanner() {
+        ctx.fillStyle = "#fdfbf7";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const titulo = document.getElementById("titulo").value;
+        const autor = document.getElementById("autor").value;
+        const instituicao = document.getElementById("instituicao").value;
+        const resumo = document.getElementById("resumo").value;
+
+        const imagensProjeto = await carregarMultiplasImagens(document.getElementById("imagensProjeto"), 6);
+        const logosInstituicao = await carregarMultiplasImagens(document.getElementById("logosInstituicao"), 1);
+
+        ctx.fillStyle = "#333";
+        ctx.font = "bold 48px Open Sans";
+        ctx.fillText(titulo, 50, 100);
+
+        ctx.font = "36px Open Sans";
+        ctx.fillText("Autor(a): " + autor, 50, 160);
+        ctx.fillText(instituicao, 50, 210);
+
+        ctx.font = "28px Open Sans";
+        const palavras = resumo.split(" ");
+        let linha = "", y = 260;
+        palavras.forEach(palavra => {
+          const teste = linha + palavra + " ";
+          const largura = ctx.measureText(teste).width;
+          if (largura > 1400) {
+            ctx.fillText(linha, 50, y);
+            linha = palavra + " ";
+            y += 40;
+          } else {
+            linha = teste;
+          }
+        });
+        ctx.fillText(linha, 50, y);
+
+        let x = 50;
+        let yStart = 500;
+        let espaco = 10;
+        let linhaAlturaMax = 0;
+
+        imagensProjeto.forEach((img, i) => {
+          const escala = Math.min(850 / img.width, 850 / img.height);
+          const w = img.width * escala;
+          const h = img.height * escala;
+
+          if (x + w > canvas.width - 50) {
+            x = 50;
+            yStart += linhaAlturaMax + espaco;
+            linhaAlturaMax = 0;
+          }
+
+          ctx.drawImage(img, x, yStart, w, h);
+          x += w + espaco;
+          linhaAlturaMax = Math.max(linhaAlturaMax, h);
+        });
+
+        logosInstituicao.forEach((img, i) => {
+          const tamanho = 150;
+          const xLogo = 1400;
+          const yLogo = 50 + i * (tamanho + 20);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(xLogo + tamanho / 2, yLogo + tamanho / 2, tamanho / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(img, xLogo, yLogo, tamanho, tamanho);
+          ctx.restore();
+        });
+
+        const rodape = new Image();
+        rodape.onload = () => ctx.drawImage(rodape, 400, 2250, 800, 120);
+        rodape.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAASACAYAAABrt62cAAEAAElEQVR4nOz9ebA96X3XeX6eJTPPOXfffvtW+14qVWnfbVkt7yCDAbuDBoIG9wAB0QNMTw9BoxiGmIGBIYahoQ3BAN10m7AGm8VGBluyZFmyrHJpqX2v377e/Z57lsx8nm';
+      }
+
+      window.baixarImagem = function () {
+        const link = document.createElement('a');
+        link.download = 'banner_mostra.png';
+        link.href = canvas.toDataURL("image/png", 1.0);
+        link.click();
+      }
+    });
+  </script>
+</body>
+</html>
