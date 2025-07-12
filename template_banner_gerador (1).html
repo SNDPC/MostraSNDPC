@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -74,8 +75,8 @@
       <label>Imagens do Projeto (até 5)</label>
       <input type="file" id="imagensProjeto" accept="image/*" multiple />
 
-      <label>Logotipos Institucionais (até 4)</label>
-      <input type="file" id="logosInstituicao" accept="image/*" multiple />
+      <label>Logotipo Institucional (1 imagem)</label>
+      <input type="file" id="logosInstituicao" accept="image/*" />
 
       <button type="button" id="gerarBannerBtn">Gerar Banner</button>
     </form>
@@ -126,44 +127,7 @@
         const resumo = document.getElementById("resumo").value;
 
         const imagensProjeto = await carregarMultiplasImagens(document.getElementById("imagensProjeto"), 6);
-        const logosInstituicao = await carregarMultiplasImagens(document.getElementById("logosInstituicao"), 4);
-
-        const icones = new Image();
-        icones.onload = () => ctx.drawImage(icones, 20, 20, 150, 300);
-        icones.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAgACAYAAAC4vUH3AAEAAElEQVR4nOz995Ilx5XuC/7cPdTWqbN0QRIAARAEQdXsvsfO2Jy5ZmP3CeYd5jHmAeZF5hnuzPTtQwlCEoRWpbMq9ZYR4e73D/eIvTNRBYAkukmi1o+WVZm5VUTsXYR9a3';
-
-        const posicoesFotos = [
-  { x: 50, y: 500 },
-  { x: 825, y: 500 },
-  { x: 50, y: 950 },
-  { x: 825, y: 950 },
-  { x: 50, y: 1400 },
-  { x: 825, y: 1400 }
-];
-
-        imagensProjeto.forEach((img, i) => {
-          if (i >= posicoesFotos.length) return;
-          const pos = posicoesFotos[i];
-          const escala = Math.min(750 / img.width, 500 / img.height);
-          const w = img.width * escala;
-          const h = img.height * escala;
-          ctx.drawImage(img, pos.x, pos.y, w, h);
-        });
-
-        logosInstituicao.forEach((img, i) => {
-          if (i === 0) {
-            const tamanho = 200;
-            const x = 1350;
-            const y = 50;
-            ctx.save();
-            ctx.beginPath();
-            ctx.arc(x + tamanho / 2, y + tamanho / 2, tamanho / 2, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(img, x, y, tamanho, tamanho);
-            ctx.restore();
-          }
-        });
+        const logosInstituicao = await carregarMultiplasImagens(document.getElementById("logosInstituicao"), 1);
 
         ctx.fillStyle = "#333";
         ctx.font = "bold 48px Open Sans";
@@ -175,7 +139,7 @@
 
         ctx.font = "28px Open Sans";
         const palavras = resumo.split(" ");
-        let linha = "", y = 2000;
+        let linha = "", y = 260;
         palavras.forEach(palavra => {
           const teste = linha + palavra + " ";
           const largura = ctx.measureText(teste).width;
@@ -189,9 +153,43 @@
         });
         ctx.fillText(linha, 50, y);
 
+        let x = 50;
+        let yStart = 500;
+        let espaco = 10;
+        let linhaAlturaMax = 0;
+
+        imagensProjeto.forEach((img, i) => {
+          const escala = Math.min(850 / img.width, 850 / img.height);
+          const w = img.width * escala;
+          const h = img.height * escala;
+
+          if (x + w > canvas.width - 50) {
+            x = 50;
+            yStart += linhaAlturaMax + espaco;
+            linhaAlturaMax = 0;
+          }
+
+          ctx.drawImage(img, x, yStart, w, h);
+          x += w + espaco;
+          linhaAlturaMax = Math.max(linhaAlturaMax, h);
+        });
+
+        logosInstituicao.forEach((img, i) => {
+          const tamanho = 150;
+          const xLogo = 1400;
+          const yLogo = 50 + i * (tamanho + 20);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(xLogo + tamanho / 2, yLogo + tamanho / 2, tamanho / 2, 0, Math.PI * 2);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(img, xLogo, yLogo, tamanho, tamanho);
+          ctx.restore();
+        });
+
         const rodape = new Image();
         rodape.onload = () => ctx.drawImage(rodape, 400, 2250, 800, 120);
-        rodape.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAASACAYAAABrt62cAAEAAElEQVR4nOz9ebA96X3XeX6eJTPPOXfffvtW+14qVWnfbVkt7yCDAbuDBoIG9wAB0QNMTw9BoxiGmIGBIYahoQ3BAN10m7AGm8VGBluyZFmyrHJpqX2v377e/Z57lsx8nm'; // imagem real substituída com base64 válido
+        rodape.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAACAAAAASACAYAAABrt62cAAEAAElEQVR4nOz9ebA96X3XeX6eJTPPOXfffvtW+14qVWnfbVkt7yCDAbuDBoIG9wAB0QNMTw9BoxiGmIGBIYahoQ3BAN10m7AGm8VGBluyZFmyrHJpqX2v377e/Z57lsx8nm';
       }
 
       window.baixarImagem = function () {
@@ -204,3 +202,4 @@
   </script>
 </body>
 </html>
+Atualiza o gerador de banner com layout otimizado
